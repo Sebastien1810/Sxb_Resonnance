@@ -28,24 +28,26 @@ module.exports = {
       };
       await playersDB.write();
 
-      await interaction.reply({
+      return interaction.reply({
         content: `👤 Nouveau personnage créé pour ${pseudo} ! Bienvenue dans ta nouvelle vie ✨`,
       });
-      return;
     }
 
     const joueur = playersDB.data[userId];
 
-    // Formatage du message
-    const profil = `🪪 **Profil de ${joueur.pseudo}**
+    // Formatage du profil
+    const profil = `
+🪪 **Profil de ${joueur.pseudo}**
 🎂 Âge : ${joueur.age} ans
 💰 Obsidienne : ${joueur.obsidienne}
 🍗 Faim : ${joueur.stats.faim}
 😊 Humeur : ${joueur.stats.humeur}
-⚡ Énergie : ${joueur.stats.energie}`;
+⚡ Énergie : ${joueur.stats.energie}
+    `;
 
     await interaction.reply({
       content: profil,
+      ephemeral: false, // 👈 visible par tous (tu peux le retirer, c’est l’option par défaut)
     });
   },
 };
