@@ -2,15 +2,15 @@ const { Client, Collection, GatewayIntentBits } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 const { token } = require("./config.json");
-const { initDB } = require("./db"); // 👉 ici, en haut
-
+const { initDB } = require("./db");
+const { lancerNarrationAuto } = require("./horloge");
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
 client.commands = new Collection();
 
-// Charger les commandes du dossier /slash
+// 🔁 Charger toutes les commandes du dossier /slash
 const commandFiles = fs
   .readdirSync(path.join(__dirname, "slash"))
   .filter((file) => file.endsWith(".js"));
@@ -41,7 +41,9 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-// 🔁 Lancer le bot après initDB()
+// 🟡 Lancer le bot après avoir lu les BDD
 initDB().then(() => {
   client.login(token);
+  lancerNarrationAuto(client);
+  require("./horloge"); // 🕐 Tick automatique du monde
 });
