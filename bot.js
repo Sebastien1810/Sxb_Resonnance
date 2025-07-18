@@ -6,13 +6,14 @@ const { initDB } = require("./db");
 require("./horloge");
 const { lancerTickPNJs } = require("./pnj");
 const { lancerNarrationAuto, paroleDuMaitre } = require("./maitre_du_jeu");
+
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
 client.commands = new Collection();
 
-// 🔁 Charger toutes les commandes du dossier /slash
+// 🔁 Charger toutes les commandes slash du dossier /slash
 const commandFiles = fs
   .readdirSync(path.join(__dirname, "slash"))
   .filter((file) => file.endsWith(".js"));
@@ -22,10 +23,12 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
+// 🟢 Quand le bot est prêt
 client.once("ready", () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
 });
 
+// 🧠 Gérer les interactions slash
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -43,11 +46,10 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-// 🟡 Lancer le bot après avoir lu les BDD
+// 🚀 Lancer le monde après initialisation
 initDB().then(() => {
   client.login(token);
   paroleDuMaitre(client);
   lancerNarrationAuto(client);
   lancerTickPNJs(client);
-  require("./horloge"); // 🕐 Tick automatique du monde
 });

@@ -1,15 +1,12 @@
 const cron = require("node-cron");
 const { worldDB, playersDB } = require("./db");
 
-// ⏱️ Fonction utilitaire : choix aléatoire dans un tableau
+// 🔁 Choix aléatoire dans un tableau
 function choisirAleatoire(tableau) {
   return tableau[Math.floor(Math.random() * tableau.length)];
 }
 
-// 📅 Saisons du jeu (10 jours chacune pour 1 cycle complet en 40 jours)
 const saisons = ["printemps", "été", "automne", "hiver"];
-
-// 🌤 Météos possibles selon la saison
 const meteoPossible = {
   printemps: ["ensoleillé", "pluvieux", "couvert"],
   été: ["ensoleillé", "orageux", "lourd"],
@@ -17,9 +14,11 @@ const meteoPossible = {
   hiver: ["enneigé", "d'un froid glacial"],
 };
 
-// ⏰ Fonction principale du tick (1x par heure)
 async function tickDuMonde() {
   await worldDB.read();
+  await playersDB.read();
+
+  // Initialisation des stats si absentes
   if (!worldDB.data.stats) {
     worldDB.data.stats = {
       crime: 20,
@@ -32,49 +31,35 @@ async function tickDuMonde() {
     };
   }
 
-  await playersDB.read();
-
-  // 📈 Incrémenter le jour
   worldDB.data.jour = (worldDB.data.jour || 1) + 1;
-
-  // 🕓 Date IRL du tick
   worldDB.data.heureIRL = new Date().toISOString();
 
-  // 🍂 Calculer la saison actuelle (10 jours par saison)
   const indexSaison = Math.floor((worldDB.data.jour - 1) / 10) % saisons.length;
-  const saisonActuelle = saisons[indexSaison] || "printemps";
-  worldDB.data.saison = saisonActuelle;
+  worldDB.data.saison = saisons[indexSaison];
 
-  // 🌦 Choisir une météo valide
-  const meteoSaison = meteoPossible[saisonActuelle] || ["ensoleillé"];
-  worldDB.data.météo = choisirAleatoire(meteoSaison);
+  const meteo = choisirAleatoire(
+    meteoPossible[worldDB.data.saison] || ["ensoleillé"]
+  );
+  worldDB.data.météo = meteo;
 
-  // 🎂 Vieillissement des joueurs (1 an tous les 30 jours)
   for (const id in playersDB.data) {
     const joueur = playersDB.data[id];
-    const baseAge = joueur.ageInitial || 18;
-
-    if (!joueur.ageInitial) {
-      joueur.ageInitial = joueur.age || 18;
-    }
-
-    joueur.age = baseAge + Math.floor(worldDB.data.jour / 30);
+    joueur.ageInitial ??= joueur.age || 18;
+    joueur.age = joueur.ageInitial + Math.floor(worldDB.data.jour / 30);
   }
 
   await worldDB.write();
   await playersDB.write();
 
   console.log(
-    `🕐 Tick : Jour ${worldDB.data.jour} - Saison ${saisonActuelle} - ${worldDB.data.météo}`
+    `🕐 Tick : Jour ${worldDB.data.jour} - ${worldDB.data.saison} - ${worldDB.data.météo}`
   );
 }
 
-// ⏳ Lancer la fonction toutes les heures pile
+// Tick du monde chaque heure
 cron.schedule("0 * * * *", () => {
   tickDuMonde();
 });
 
 console.log("🕰️ Horloge du monde initialisée !");
-module.exports = {
-  tickDuMonde,
-};
+module.exports = { tickDuMonde };
