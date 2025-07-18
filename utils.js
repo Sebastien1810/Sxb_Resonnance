@@ -42,4 +42,26 @@ function appliquerEffets(monde) {
     stats.economie = Math.max(0, stats.economie - 2);
 }
 
-module.exports = { genererNarration, appliquerEffets };
+function genererNarrationPNJ(pnj) {
+  const phrases = {
+    délinquant: [
+      `${pnj.nom} rôde dans les ruelles, cherchant à imposer son autorité.`,
+      `${pnj.nom} recrute discrètement de nouveaux membres pour son gang.`,
+      `${pnj.nom} provoque une altercation dans un quartier sensible.`,
+    ],
+    infirmière: [
+      `${pnj.nom} soigne les sans-abri gratuitement à la clinique de quartier.`,
+      `${pnj.nom} organise une collecte de médicaments pour les plus pauvres.`,
+      `${pnj.nom} passe la journée à s’occuper de patients vulnérables.`,
+    ],
+  };
+  for (const role in phrases) {
+    if (pnj.role.includes(role)) {
+      const options = phrases[role];
+      return options[Math.floor(Math.random() * options.length)];
+    }
+  }
+  return `${pnj.nom}mène une action mystérieuse dont personne ne parle ...`;
+}
+
+module.exports = { genererNarration, appliquerEffets, genererNarrationPNJ };
