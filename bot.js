@@ -4,6 +4,7 @@ const path = require("path");
 const { token } = require("./config.json");
 const { initDB } = require("./db");
 require("./horloge");
+const { lancerTickPNJs } = require("./pnj");
 const { lancerNarrationAuto, paroleDuMaitre } = require("./maitre_du_jeu");
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -47,5 +48,6 @@ initDB().then(() => {
   client.login(token);
   paroleDuMaitre(client);
   lancerNarrationAuto(client);
+  lancerTickPNJs(client);
   require("./horloge"); // 🕐 Tick automatique du monde
 });

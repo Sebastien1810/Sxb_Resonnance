@@ -60,7 +60,10 @@ module.exports = {
 -10 😊 Humeur → ${joueur.stats.humeur}/100
       `,
     });
-    //influence de la commande sur le monde
-    worldDB.data.stats.santePublique -= 0.4;
+    //influence de la commande sur le monde(augmente l'économie si travail il y a )
+    worldDB.data.stats.economie = Math.min(
+      worldDB.data.stats.economie + 0.4,
+      100
+    );
   },
 };

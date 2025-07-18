@@ -1,6 +1,7 @@
 const { Low } = require("lowdb");
 const { JSONFile } = require("lowdb/node");
 const path = require("path");
+const pnjsDB = new JSONFile("./data/pnjs.json");
 
 // 🎮 Base des joueurs
 const playerFile = path.join(__dirname, "data/players.json");
@@ -37,6 +38,7 @@ async function initDB() {
 
 module.exports = {
   playersDB,
+  pnjsDB,
   worldDB,
   initDB,
 };

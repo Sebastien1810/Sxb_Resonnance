@@ -27,11 +27,15 @@ async function paroleDuMaitre(client) {
   let canalNarration = null;
   try {
     canalNarration = await client.channels.fetch("1395384816588816425");
+    if (!canalNarration) {
+      console.log("salon introuvable(fetch nul)");
+    }
   } catch (error) {
     console.log(
       "⚠️ Impossible de récupérer le salon de narration :",
       error.message
     );
+    return;
   }
 
   // Si le salon existe → on envoie le message
@@ -40,8 +44,6 @@ async function paroleDuMaitre(client) {
     appliquerEffets(monde);
     await worldDB.write();
     console.log("📢 Le maître du jeu a parlé.");
-  } else {
-    console.log("⚠️ Salon de narration introuvable.");
   }
 }
 
