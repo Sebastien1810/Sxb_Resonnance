@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { playersDB } = require("../db");
+const { playersDB, worldDB } = require("../db");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -60,5 +60,7 @@ module.exports = {
 -10 😊 Humeur → ${joueur.stats.humeur}/100
       `,
     });
+    //influence de la commande sur le monde
+    worldDB.data.stats.santePublique -= 0.4;
   },
 };

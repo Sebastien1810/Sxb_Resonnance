@@ -11,15 +11,27 @@ const saisons = ["printemps", "été", "automne", "hiver"];
 
 // 🌤 Météos possibles selon la saison
 const meteoPossible = {
-  printemps: ["ensoleillé", "pluvieux", "vent frais", "couvert"],
-  été: ["canicule", "ensoleillé", "orage", "lourd"],
-  automne: ["pluvieux", "brouillard", "vent froid", "gris"],
-  hiver: ["neige", "verglas", "froid glacial"],
+  printemps: ["ensoleillé", "pluvieux", "couvert"],
+  été: ["ensoleillé", "orageux", "lourd"],
+  automne: ["pluvieux", "couvert avec beaucoup de brouillard", "gris"],
+  hiver: ["enneigé", "d'un froid glacial"],
 };
 
 // ⏰ Fonction principale du tick (1x par heure)
 async function tickDuMonde() {
   await worldDB.read();
+  if (!worldDB.data.stats) {
+    worldDB.data.stats = {
+      crime: 20,
+      tensionSociale: 20,
+      chômage: 15,
+      santePublique: 80,
+      economie: 50,
+      tourisme: 25,
+      ecologie: 45,
+    };
+  }
+
   await playersDB.read();
 
   // 📈 Incrémenter le jour
@@ -63,3 +75,6 @@ cron.schedule("0 * * * *", () => {
 });
 
 console.log("🕰️ Horloge du monde initialisée !");
+module.exports = {
+  tickDuMonde,
+};

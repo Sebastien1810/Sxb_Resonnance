@@ -1,8 +1,10 @@
 const cron = require("node-cron");
 const { worldDB } = require("./db");
+const { genererNarration, appliquerEffets } = require("./utils");
 
 // Fonction principale qui fait parler le Maître du Jeu
 async function paroleDuMaitre(client) {
+  console.log("⏱️ Tick de narration déclenché !");
   await worldDB.read();
   const monde = worldDB.data;
 
@@ -15,31 +17,35 @@ async function paroleDuMaitre(client) {
 
   // Si c’est un nouveau jour → on annonce le jour
   if (jour > dernierJourAnnonce) {
-    message = `📜 *Le jour ${jour} se lève. Le ciel est ${meteo} en ce début de ${saison}.*`;
-
-    // On met à jour le dernier jour annoncé
+    message = `📜 *Le jour ${jour} se lève. Météo ${meteo} en ce début de ${saison}.*`;
     monde.dernierJourAnnonce = jour;
-    await worldDB.write();
   } else {
-    // Sinon → message narratif générique
-    message = `*Le Maître du Jeu observe le monde en silence...*`;
+    message = genererNarration(monde);
   }
 
-  // On récupère le salon #utopia
-  const canalNarration = client.channels.cache.find(
-    (channel) => channel.name === "utopia"
-  );
+  // On tente de récupérer le salon par ID
+  let canalNarration = null;
+  try {
+    canalNarration = await client.channels.fetch("1395384816588816425");
+  } catch (error) {
+    console.log(
+      "⚠️ Impossible de récupérer le salon de narration :",
+      error.message
+    );
+  }
 
-  // On envoie le message si le salon existe
+  // Si le salon existe → on envoie le message
   if (canalNarration) {
     canalNarration.send(message);
+    appliquerEffets(monde);
+    await worldDB.write();
     console.log("📢 Le maître du jeu a parlé.");
   } else {
-    console.log("⚠️ Salon de narration 'utopia' introuvable.");
+    console.log("⚠️ Salon de narration introuvable.");
   }
 }
 
-// Fonction de lancement automatique toutes les 10 minutes
+// Lancer automatiquement toutes les 10 minutes
 function lancerNarrationAuto(client) {
   cron.schedule("*/10 * * * *", () => {
     paroleDuMaitre(client);

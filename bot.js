@@ -3,7 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const { token } = require("./config.json");
 const { initDB } = require("./db");
-const { lancerNarrationAuto } = require("./horloge");
+require("./horloge");
+const { lancerNarrationAuto, paroleDuMaitre } = require("./maitre_du_jeu");
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
@@ -44,6 +45,7 @@ client.on("interactionCreate", async (interaction) => {
 // 🟡 Lancer le bot après avoir lu les BDD
 initDB().then(() => {
   client.login(token);
+  paroleDuMaitre(client);
   lancerNarrationAuto(client);
   require("./horloge"); // 🕐 Tick automatique du monde
 });
