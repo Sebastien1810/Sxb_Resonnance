@@ -55,7 +55,7 @@ async function tickPNJs(client) {
       // 🗣️ Le PNJ raconte son action
       if (canalNarration) {
         const messagePNJ = genererNarrationPNJ(pnj);
-        canalNarration.send(messagePNJ);
+        await canalNarration.send(messagePNJ);
       }
     }
 
