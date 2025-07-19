@@ -1,3 +1,4 @@
+// 🔮 Génère une narration globale selon les stats du monde
 function genererNarration(monde) {
   const {
     crime,
@@ -27,9 +28,11 @@ function genererNarration(monde) {
     narration.push("😌 Tout semble calme aujourd'hui...");
   }
 
+  // 🔁 Retourne une phrase aléatoire par jour
   return narration[Math.floor(Math.random() * narration.length)];
 }
 
+// ⚙️ Applique les effets automatiques entre les statistiques du monde
 function appliquerEffets(monde) {
   const stats = monde.stats;
 
@@ -42,6 +45,7 @@ function appliquerEffets(monde) {
     stats.economie = Math.max(0, stats.economie - 2);
 }
 
+// 🗣️ Génère une narration individuelle selon le rôle du PNJ
 function genererNarrationPNJ(pnj) {
   const phrases = {
     délinquant: [
@@ -54,14 +58,30 @@ function genererNarrationPNJ(pnj) {
       `${pnj.nom} organise une collecte de médicaments pour les plus pauvres.`,
       `${pnj.nom} passe la journée à s’occuper de patients vulnérables.`,
     ],
+    policier: [
+      `${pnj.nom} patrouille dans les rues, dissuadant les actes violents.`,
+      `${pnj.nom} enquête discrètement sur les agissements de Spidicus.`,
+      `${pnj.nom} arrête plusieurs suspects liés à un réseau criminel.`,
+      `${pnj.nom} se recueille devant la tombe de sa fiancée, puis reprend sa traque.`,
+    ],
   };
+
+  // 🧠 Rôle détecté en minuscule pour éviter les erreurs de casse
+  const rolePNJ = pnj.role.toLowerCase();
+
   for (const role in phrases) {
-    if (pnj.role.includes(role)) {
+    if (rolePNJ.includes(role)) {
       const options = phrases[role];
       return options[Math.floor(Math.random() * options.length)];
     }
   }
-  return `${pnj.nom}mène une action mystérieuse dont personne ne parle ...`;
+
+  // 🔍 Par défaut, si le rôle n’est pas reconnu
+  return `${pnj.nom} mène une action mystérieuse dont personne ne parle...`;
 }
 
-module.exports = { genererNarration, appliquerEffets, genererNarrationPNJ };
+module.exports = {
+  genererNarration,
+  appliquerEffets,
+  genererNarrationPNJ,
+};

@@ -7,7 +7,7 @@ function lancerTickPNJs(client) {
     console.log("⏱️ tickPNJs lancé");
     tickPNJs(client);
   });
-  console.log("🌀 Boucle PNJ active toutes les minutes (debug).");
+  console.log("🌀 Boucle PNJ active toutes les 15 minutes .");
 }
 
 async function tickPNJs(client) {
@@ -45,6 +45,15 @@ async function tickPNJs(client) {
           (monde.stats.tensionSociale || 0) + 0.2
         );
         pnj.reputation = (pnj.reputation || 0) + 1;
+      }
+
+      if (pnj.role.includes("policier")) {
+        monde.stats.crime = Math.max(0, monde.stats.crime - 1.5);
+        monde.stats.tensionSociale = Math.max(
+          0,
+          monde.stats.tensionSociale - 0.2
+        );
+        pnj.reputation = (pnj.reputation || 0) + 0.6;
       }
 
       if (pnj.role.includes("infirmière")) {
