@@ -39,7 +39,7 @@ async function tickPNJs(client) {
       if (!pnj.actif) continue;
 
       if (pnj.role === "délinquant") {
-        monde.stats.crime = Math.min(100, (monde.stats.crime || 0) + 0.4);
+        monde.stats.crime = Math.min(100, (monde.stats.crime || 0) + 1.4);
         monde.stats.tensionSociale = Math.min(
           100,
           (monde.stats.tensionSociale || 0) + 0.2

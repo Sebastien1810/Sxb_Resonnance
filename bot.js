@@ -6,6 +6,7 @@ const { initDB } = require("./db");
 const { lancerTickPNJs } = require("./pnj");
 const { lancerNarrationAuto, paroleDuMaitre } = require("./maitre_du_jeu");
 require("./horloge");
+const { lancerTickGroupes } = require("./horlogeGroupe");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -49,4 +50,5 @@ initDB().then(() => {
   paroleDuMaitre(client);
   lancerNarrationAuto(client);
   lancerTickPNJs(client); // ✅ Appelé après la lecture des BDD
+  lancerTickGroupes(client);
 });
