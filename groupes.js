@@ -1,10 +1,14 @@
-const { JSONFile, Low } = require("lowdb");
 const path = require("path");
+const { Low } = require("lowdb");
+const { JSONFile } = require("lowdb/node"); // ✅ Adaptateur JSON
 
 const file = path.join(__dirname, "data/populations.json");
 const adapter = new JSONFile(file);
-const groupesDB = new Low(adapter);
 
+// ✅ Fournir une valeur par défaut vide à la base
+const groupesDB = new Low(adapter, {}); // 👈 Ajout essentiel
+
+// 💬 Réactions des groupes selon les paliers
 const reactions = {
   habitants: {
     modérées: [
@@ -40,13 +44,14 @@ const reactions = {
   },
 };
 
-// Seuils de tension pour chaque intensité
+// 🧠 Seuils de tension à atteindre
 const SEUILS = {
   modérées: 5,
   sérieuses: 10,
   extrêmes: 15,
 };
 
+// 🔎 Analyse des groupes à chaque tick
 async function analyserGroupes(client, monde) {
   await groupesDB.read();
   const groupes = groupesDB.data;
@@ -64,6 +69,7 @@ async function analyserGroupes(client, monde) {
 
     let tension = groupe.niveauTension || 0;
 
+    // 🧪 Comparaison entre stats et sensibilité du groupe
     for (const critere in groupe.sensibilité) {
       const valeurStat = monde.stats[critere] || 0;
       const seuil = groupe.sensibilité[critere];
@@ -73,13 +79,13 @@ async function analyserGroupes(client, monde) {
 
     groupe.niveauTension = Math.min(tension, 20);
 
-    // Détermination du nouveau palier
+    // ⚠️ Identification du palier atteint
     let nouveauPalier = "aucun";
     if (tension >= SEUILS.extrêmes) nouveauPalier = "extrêmes";
     else if (tension >= SEUILS.sérieuses) nouveauPalier = "sérieuses";
     else if (tension >= SEUILS.modérées) nouveauPalier = "modérées";
 
-    // Vérifie si un nouveau palier a été franchi
+    // 💬 Si un nouveau palier est atteint → message
     if (
       nouveauPalier !== "aucun" &&
       nouveauPalier !== groupe.dernierPalier &&
@@ -92,7 +98,7 @@ async function analyserGroupes(client, monde) {
       groupe.dernierPalier = nouveauPalier;
     }
 
-    // Réinitialise si la tension est retombée en dessous du seuil minimal
+    // 🔁 Réinitialisation du palier si la tension retombe
     if (tension < SEUILS.modérées) {
       groupe.dernierPalier = "aucun";
     }

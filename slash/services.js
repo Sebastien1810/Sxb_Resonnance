@@ -4,7 +4,7 @@ const {
   StringSelectMenuBuilder,
 } = require("discord.js");
 
-const { getAllService } = require("../servicesManager");
+const { getAllServices } = require("../servicesManager");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,7 +12,7 @@ module.exports = {
     .setDescription("Consulte les services disponibles"),
 
   async execute(interaction) {
-    const allServices = await getAllService();
+    const allServices = await getAllServices();
 
     const categories = Object.keys(allServices);
     if (categories.length === 0) {
