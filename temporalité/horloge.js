@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const { worldDB, playersDB } = require("./db");
+const { worldDB, playersDB } = require("../db");
 
 // 🔁 Choix aléatoire dans un tableau
 function choisirAleatoire(tableau) {

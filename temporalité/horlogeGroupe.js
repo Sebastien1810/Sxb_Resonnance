@@ -1,6 +1,6 @@
 const cron = require("node-cron");
-const { analyserGroupes } = require("./groupes");
-const { worldDB } = require("./db");
+const { analyserGroupes } = require("../groupes");
+const { worldDB } = require("../db");
 
 function lancerTickGroupes(client) {
   cron.schedule("*/10 * * * *", async () => {
