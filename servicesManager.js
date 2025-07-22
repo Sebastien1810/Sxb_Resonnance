@@ -4,19 +4,29 @@ const { JSONFile } = require("lowdb/node");
 
 const playersFile = path.join(__dirname, "data/players.json");
 const playersAdapter = new JSONFile(playersFile);
-const playersDB = new Low(playersAdapter);
+const playersDB = new Low(playersAdapter, {});
 
 const servicesFile = path.join(__dirname, "data/services.json");
 const servicesAdapter = new JSONFile(servicesFile);
-const servicesDB = new Low(servicesAdapter);
+const servicesDB = new Low(servicesAdapter, {});
 
-// Fonction principale d’achat
+// ✅ Fonction pour lire tous les services
+async function getAllServices() {
+  await servicesDB.read();
+  servicesDB.data ||= {};
+  return servicesDB.data;
+}
+
+// ✅ Fonction pour acheter un service
 async function acheterService(playerId, categorie, nomService) {
   await servicesDB.read();
   await playersDB.read();
 
-  const services = servicesDB.data || {};
-  const joueurs = playersDB.data || {};
+  servicesDB.data ||= {};
+  playersDB.data ||= {};
+
+  const services = servicesDB.data;
+  const joueurs = playersDB.data;
 
   const joueur = joueurs[playerId];
   if (!joueur) {
@@ -35,22 +45,18 @@ async function acheterService(playerId, categorie, nomService) {
     };
   }
 
-  // Déduire le prix
   joueur.obsidienne -= service.prix;
 
-  // Appliquer les effets
   for (const [cle, valeur] of Object.entries(service.effets)) {
     if (typeof joueur.stats[cle] === "number") {
       joueur.stats[cle] += valeur;
-      joueur.stats[cle] = Math.max(0, Math.min(joueur.stats[cle], 100)); // bornage entre 0 et 100
+      joueur.stats[cle] = Math.max(0, Math.min(joueur.stats[cle], 100));
     }
   }
 
-  // Sauvegarde
   joueurs[playerId] = joueur;
   await playersDB.write();
 
-  // Message de confirmation
   const effetsTxt = Object.entries(service.effets)
     .map(([k, v]) => `${v >= 0 ? "+" : ""}${v} ${k}`)
     .join(", ");
@@ -61,4 +67,7 @@ async function acheterService(playerId, categorie, nomService) {
   };
 }
 
-module.exports = { acheterService };
+module.exports = {
+  getAllServices,
+  acheterService,
+};

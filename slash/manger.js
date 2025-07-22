@@ -54,7 +54,7 @@ module.exports = {
     await interaction.reply({
       content: `
 🍽️ ${joueur.pseudo} a pris un bon repas !
-
+-10 Obsidienne ${joueur.Obsidienne}/100
 +40 🍗 Faim → ${joueur.stats.faim}/100  
 +15 ⚡ Énergie → ${joueur.stats.energie}/100  
 +10 😊 Humeur → ${joueur.stats.humeur}/100

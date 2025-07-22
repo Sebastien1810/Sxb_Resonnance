@@ -1,7 +1,7 @@
 const cron = require("node-cron");
-const { worldDB, playersDB } = require("../db");
+const { worldDB, playersDB, pnjsDB } = require("../db");
+const { entretenirGang } = require("../pnj"); // 🔁 import correct
 
-// 🔁 Choix aléatoire dans un tableau
 function choisirAleatoire(tableau) {
   return tableau[Math.floor(Math.random() * tableau.length)];
 }
@@ -14,13 +14,16 @@ const meteoPossible = {
   hiver: ["enneigé", "d'un froid glacial"],
 };
 
-async function tickDuMonde() {
+async function tickDuMonde(client) {
   await worldDB.read();
   await playersDB.read();
+  await pnjsDB.read(); // 🔁 ajout ici
+
+  const monde = worldDB.data;
 
   // Initialisation des stats si absentes
-  if (!worldDB.data.stats) {
-    worldDB.data.stats = {
+  if (!monde.stats) {
+    monde.stats = {
       crime: 20,
       tensionSociale: 20,
       chômage: 15,
@@ -31,34 +34,50 @@ async function tickDuMonde() {
     };
   }
 
-  worldDB.data.jour = (worldDB.data.jour || 1) + 1;
-  worldDB.data.heureIRL = new Date().toISOString();
+  monde.jour = (monde.jour || 1) + 1;
+  monde.heureIRL = new Date().toISOString();
 
-  const indexSaison = Math.floor((worldDB.data.jour - 1) / 10) % saisons.length;
-  worldDB.data.saison = saisons[indexSaison];
-
-  const meteo = choisirAleatoire(
-    meteoPossible[worldDB.data.saison] || ["ensoleillé"]
-  );
-  worldDB.data.météo = meteo;
+  const indexSaison = Math.floor((monde.jour - 1) / 10) % saisons.length;
+  monde.saison = saisons[indexSaison];
+  monde.météo = choisirAleatoire(meteoPossible[monde.saison]);
 
   for (const id in playersDB.data) {
     const joueur = playersDB.data[id];
     joueur.ageInitial ??= joueur.age || 18;
-    joueur.age = joueur.ageInitial + Math.floor(worldDB.data.jour / 30);
+    joueur.age = joueur.ageInitial + Math.floor(monde.jour / 30);
+  }
+
+  // ✅ Paiement du gang à la fin du mois
+  if (monde.jour % 30 === 0) {
+    const spidicus = Object.values(pnjsDB.data).find(
+      (p) => p.nom === "Spidicus"
+    );
+    if (spidicus) {
+      const { message } = entretenirGang(spidicus);
+      console.log(`💼 Entretien du gang : ${message}`);
+
+      try {
+        const canal = await client.channels.fetch("1395384816588816425");
+        if (canal) await canal.send(`📆 En fin de mois, ${message}`);
+      } catch (err) {
+        console.log("⚠️ Erreur envoi canal narration :", err.message);
+      }
+
+      await pnjsDB.write();
+    }
   }
 
   await worldDB.write();
   await playersDB.write();
 
   console.log(
-    `🕐 Tick : Jour ${worldDB.data.jour} - ${worldDB.data.saison} - ${worldDB.data.météo}`
+    `🕐 Tick : Jour ${monde.jour} - ${monde.saison} - ${monde.météo}`
   );
 }
 
 // Tick du monde chaque heure
 cron.schedule("0 * * * *", () => {
-  tickDuMonde();
+  tickDuMonde(global.client); // ⚠️ on doit passer le client en paramètre
 });
 
 console.log("🕰️ Horloge du monde initialisée !");

@@ -9,12 +9,16 @@ require("./temporalité/horloge");
 const { lancerTickGroupes } = require("./temporalité/horlogeGroupe");
 const { lancerTickEvenements } = require("./temporalité/horlogeEvenements");
 
-// ✅ Import correct du handler du menu déroulant
+// ✅ Handlers pour les menus déroulants
 const serviceSelectHandler = require("./select/serviceCategorie");
+const acheterServiceHandler = require("./select/acheter_service");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
+
+// ✅ Rend le client accessible globalement pour les fichiers comme horloge.js
+global.client = client;
 
 client.commands = new Collection();
 
@@ -34,7 +38,7 @@ client.once("ready", () => {
 
 // 🎯 Gestion des interactions
 client.on(Events.InteractionCreate, async (interaction) => {
-  // Gestion des commandes
+  // 📦 Commandes slash
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
@@ -50,15 +54,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // 🎯 Gestion du menu déroulant pour les services
+  // 🎛️ Menus déroulants
   if (interaction.isStringSelectMenu()) {
     if (interaction.customId === "choix_categorie_service") {
       await serviceSelectHandler.execute(interaction);
     }
+
+    if (interaction.customId === "acheter_service") {
+      await acheterServiceHandler.execute(interaction);
+    }
   }
 });
 
-// 🟡 Initialisation des bases de données puis lancement des systèmes
+// 🚀 Initialisation des bases de données + systèmes
 initDB().then(() => {
   client.login(token);
   paroleDuMaitre(client);
