@@ -5,9 +5,10 @@ const { token } = require("./config.json");
 const { initDB } = require("./db");
 const { lancerTickPNJs } = require("./pnj");
 const { lancerNarrationAuto, paroleDuMaitre } = require("./maitre_du_jeu");
-require("./temporalité/horloge");
+require("./temporalité/horloge"); // contient tickDuMonde + happenings
 const { lancerTickGroupes } = require("./temporalité/horlogeGroupe");
 const { lancerTickEvenements } = require("./temporalité/horlogeEvenements");
+const { resoudreHappening } = require("./happeningsManager");
 
 // ✅ Handlers pour les menus déroulants
 const serviceSelectHandler = require("./select/serviceCategorie");
@@ -16,9 +17,6 @@ const acheterServiceHandler = require("./select/acheter_service");
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
-
-// ✅ Rend le client accessible globalement pour les fichiers comme horloge.js
-global.client = client;
 
 client.commands = new Collection();
 
@@ -34,11 +32,12 @@ for (const file of commandFiles) {
 
 client.once("ready", () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
+  global.client = client; // important pour les ticks
 });
 
 // 🎯 Gestion des interactions
 client.on(Events.InteractionCreate, async (interaction) => {
-  // 📦 Commandes slash
+  // Slash command
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
@@ -54,19 +53,36 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // 🎛️ Menus déroulants
+  // 🎯 Menus déroulants
   if (interaction.isStringSelectMenu()) {
     if (interaction.customId === "choix_categorie_service") {
       await serviceSelectHandler.execute(interaction);
     }
-
     if (interaction.customId === "acheter_service") {
       await acheterServiceHandler.execute(interaction);
     }
   }
+
+  // 🎭 Boutons de happening
+  if (interaction.isButton()) {
+    if (interaction.customId === "stopper_larcin") {
+      await interaction.reply({
+        content: "Tu interviens courageusement.",
+        ephemeral: true,
+      });
+      await resoudreHappening(interaction, "stopper");
+    }
+    if (interaction.customId === "ignorer_larcin") {
+      await interaction.reply({
+        content: "Tu détournes les yeux…",
+        ephemeral: true,
+      });
+      await resoudreHappening(interaction, "ignorer");
+    }
+  }
 });
 
-// 🚀 Initialisation des bases de données + systèmes
+// 🟡 Lancement du bot après init DB
 initDB().then(() => {
   client.login(token);
   paroleDuMaitre(client);

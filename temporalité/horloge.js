@@ -1,6 +1,7 @@
 const cron = require("node-cron");
 const { worldDB, playersDB, pnjsDB } = require("../db");
-const { entretenirGang } = require("../pnj"); // 🔁 import correct
+const { entretenirGang } = require("../pnj");
+const { declencherHappening } = require("../happeningsManager");
 
 function choisirAleatoire(tableau) {
   return tableau[Math.floor(Math.random() * tableau.length)];
@@ -17,7 +18,7 @@ const meteoPossible = {
 async function tickDuMonde(client) {
   await worldDB.read();
   await playersDB.read();
-  await pnjsDB.read(); // 🔁 ajout ici
+  await pnjsDB.read();
 
   const monde = worldDB.data;
 
@@ -47,7 +48,7 @@ async function tickDuMonde(client) {
     joueur.age = joueur.ageInitial + Math.floor(monde.jour / 30);
   }
 
-  // ✅ Paiement du gang à la fin du mois
+  // ✅ Entretien du gang de Spidicus tous les 30 jours
   if (monde.jour % 30 === 0) {
     const spidicus = Object.values(pnjsDB.data).find(
       (p) => p.nom === "Spidicus"
@@ -58,9 +59,9 @@ async function tickDuMonde(client) {
 
       try {
         const canal = await client.channels.fetch("1395384816588816425");
-        if (canal) await canal.send(`📆 En fin de mois, ${message}`);
+        if (canal) await canal.send(`📆 Fin de mois : ${message}`);
       } catch (err) {
-        console.log("⚠️ Erreur envoi canal narration :", err.message);
+        console.log("⚠️ Erreur canal narration :", err.message);
       }
 
       await pnjsDB.write();
@@ -75,9 +76,15 @@ async function tickDuMonde(client) {
   );
 }
 
-// Tick du monde chaque heure
+// ⏰ Tick du monde toutes les heures
 cron.schedule("0 * * * *", () => {
-  tickDuMonde(global.client); // ⚠️ on doit passer le client en paramètre
+  tickDuMonde(global.client);
+});
+
+// 🎭 Happening toutes les 2 heures
+cron.schedule("0 */2 * * *", () => {
+  console.log("🎭 Tentative de déclenchement de happening...");
+  declencherHappening(global.client);
 });
 
 console.log("🕰️ Horloge du monde initialisée !");
