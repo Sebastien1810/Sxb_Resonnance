@@ -1,4 +1,4 @@
-const { playersDB, pnjsDB, worldDB } = require("./db");
+const { playersDB, pnjsDB, worldDB } = require("../db");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
 const canalNarrationId = "1395384816588816425";

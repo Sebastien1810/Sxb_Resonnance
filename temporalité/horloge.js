@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const { worldDB, playersDB, pnjsDB } = require("../db");
 const { entretenirGang } = require("../pnj");
-const { declencherHappening } = require("../happeningsManager");
+const { declencherHappening } = require("../happening/happeningsManager");
 
 function choisirAleatoire(tableau) {
   return tableau[Math.floor(Math.random() * tableau.length)];

@@ -5,14 +5,14 @@ const { token } = require("./config.json");
 const { initDB } = require("./db");
 const { lancerTickPNJs } = require("./pnj");
 const { lancerNarrationAuto, paroleDuMaitre } = require("./maitre_du_jeu");
-require("./temporalité/horloge"); // contient tickDuMonde + happenings
+require("./temporalité/horloge");
 const { lancerTickGroupes } = require("./temporalité/horlogeGroupe");
 const { lancerTickEvenements } = require("./temporalité/horlogeEvenements");
-const { resoudreHappening } = require("./happeningsManager");
 
-// ✅ Handlers pour les menus déroulants
+// ✅ Handlers
 const serviceSelectHandler = require("./select/serviceCategorie");
 const acheterServiceHandler = require("./select/acheter_service");
+const happeningButtons = require("./happening/buttons");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -32,12 +32,12 @@ for (const file of commandFiles) {
 
 client.once("ready", () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
-  global.client = client; // important pour les ticks
+  global.client = client; // utile pour horloge
 });
 
 // 🎯 Gestion des interactions
 client.on(Events.InteractionCreate, async (interaction) => {
-  // Slash command
+  // Slash commands
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
@@ -53,36 +53,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // 🎯 Menus déroulants
+  // Menus déroulants
   if (interaction.isStringSelectMenu()) {
     if (interaction.customId === "choix_categorie_service") {
       await serviceSelectHandler.execute(interaction);
     }
+
     if (interaction.customId === "acheter_service") {
       await acheterServiceHandler.execute(interaction);
     }
   }
 
-  // 🎭 Boutons de happening
+  // Boutons de happening
   if (interaction.isButton()) {
-    if (interaction.customId === "stopper_larcin") {
-      await interaction.reply({
-        content: "Tu interviens courageusement.",
-        ephemeral: true,
-      });
-      await resoudreHappening(interaction, "stopper");
-    }
-    if (interaction.customId === "ignorer_larcin") {
-      await interaction.reply({
-        content: "Tu détournes les yeux…",
-        ephemeral: true,
-      });
-      await resoudreHappening(interaction, "ignorer");
+    if (happeningButtons.customIdList.includes(interaction.customId)) {
+      return happeningButtons.execute(interaction);
     }
   }
 });
 
-// 🟡 Lancement du bot après init DB
+// 🔁 Démarrage des systèmes
 initDB().then(() => {
   client.login(token);
   paroleDuMaitre(client);
