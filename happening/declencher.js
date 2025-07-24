@@ -1,16 +1,13 @@
-const { playersDB, pnjsDB, worldDB } = require("../db");
+const { playersDB, pnjsDB } = require("../db");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
-const canalNarrationId = "1395384816588816425";
 const COOLDOWN_HOURS = 12;
 
 function joueurEligible(joueur) {
-  if (!joueur) return false;
   const derniere = joueur.dernierHappening
     ? new Date(joueur.dernierHappening)
     : new Date(0);
-  const now = new Date();
-  const diffHeures = (now - derniere) / (1000 * 60 * 60);
+  const diffHeures = (new Date() - derniere) / (1000 * 60 * 60);
   return diffHeures >= COOLDOWN_HOURS;
 }
 
@@ -21,10 +18,9 @@ async function declencherHappening(client) {
   const spidicus = Object.values(pnjsDB.data).find((p) => p.nom === "Spidicus");
   if (!spidicus || !spidicus.gang || spidicus.gang.length === 0) return;
 
-  const eligibles = Object.entries(playersDB.data).filter(([_, joueur]) =>
-    joueurEligible(joueur)
+  const eligibles = Object.entries(playersDB.data).filter(([_, j]) =>
+    joueurEligible(j)
   );
-
   if (eligibles.length === 0) return;
 
   const [playerId, joueur] =
@@ -58,30 +54,4 @@ Que fais-tu ?`,
   }
 }
 
-async function resoudreHappening(interaction, choix) {
-  const playerId = interaction.user.id;
-  await playersDB.read();
-  await worldDB.read();
-
-  const joueur = playersDB.data[playerId];
-  const monde = worldDB.data;
-  const canal = await interaction.client.channels.fetch(canalNarrationId);
-
-  let message = "";
-  if (choix === "stopper") {
-    joueur.reputation = (joueur.reputation || 0) + 3;
-    monde.stats.crime = Math.max(0, monde.stats.crime - 2);
-    message = `🛡️ ${joueur.pseudo} a stoppé un voleur en pleine action. Les habitants le remercient !`;
-  } else {
-    joueur.reputation = (joueur.reputation || 0) - 4;
-    monde.stats.tensionSociale = Math.min(100, monde.stats.tensionSociale + 2);
-    message = `😶 ${joueur.pseudo} a assisté à une agression… et a laissé le criminel s’échapper.`;
-  }
-
-  await playersDB.write();
-  await worldDB.write();
-
-  if (canal) await canal.send(`🎭 ${message}`);
-}
-
-module.exports = { declencherHappening, resoudreHappening };
+module.exports = { declencherHappening };

@@ -1,4 +1,4 @@
-const { resoudreHappening } = require("./happeningsManager");
+const { resoudreHappening } = require("./resoudre");
 
 const customIdList = ["stopper_larcin", "ignorer_larcin"];
 

@@ -1,6 +1,6 @@
 const { worldDB, pnjsDB } = require("./db");
 const cron = require("node-cron");
-const { genererNarrationPNJ } = require("./utils");
+const { genererNarrationPNJ } = require("./utils/utils");
 
 // ✅ Fonction de recrutement
 function recruterSbire(spidicus) {

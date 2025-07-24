@@ -3,7 +3,7 @@ const {
   ActionRowBuilder,
   StringSelectMenuInteraction,
 } = require("discord.js");
-const { getAllServices } = require("../servicesManager");
+const { getAllServices } = require("../utils/servicesManager");
 
 module.exports = {
   customId: "choix_categorie_service",

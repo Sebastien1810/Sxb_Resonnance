@@ -8,6 +8,10 @@ const { lancerNarrationAuto, paroleDuMaitre } = require("./maitre_du_jeu");
 require("./temporalité/horloge");
 const { lancerTickGroupes } = require("./temporalité/horlogeGroupe");
 const { lancerTickEvenements } = require("./temporalité/horlogeEvenements");
+const { resoudreHappening } = require("./happening/resoudre");
+const {
+  declencherHappening,
+} = require("../Sxb_Resonnance/happening/declencher");
 
 // ✅ Handlers
 const serviceSelectHandler = require("./select/serviceCategorie");

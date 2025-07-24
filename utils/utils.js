@@ -52,6 +52,8 @@ function genererNarrationPNJ(pnj) {
       `${pnj.nom} rôde dans les ruelles, cherchant à imposer son autorité.`,
       `${pnj.nom} recrute discrètement de nouveaux membres pour son gang.`,
       `${pnj.nom} provoque une altercation dans un quartier sensible.`,
+      `${pnj.nom} rit bruyamment en racontant comment il a échappé à la police hier soir.`,
+      `${pnj.nom} trace des graffitis menaçants sur les murs d'un quartier rival.`,
     ],
     infirmière: [
       `${pnj.nom} soigne les sans-abri gratuitement à la clinique de quartier.`,
@@ -79,9 +81,17 @@ function genererNarrationPNJ(pnj) {
   // 🔍 Par défaut, si le rôle n’est pas reconnu
   return `${pnj.nom} mène une action mystérieuse dont personne ne parle...`;
 }
+function statutReputation(rep) {
+  if (rep >= 20) return "héros";
+  if (rep >= 10) return "respecté";
+  if (rep >= 0) return "neutre";
+  if (rep >= -9) return "suspect";
+  return "corrompu";
+}
 
 module.exports = {
   genererNarration,
   appliquerEffets,
   genererNarrationPNJ,
+  statutReputation,
 };

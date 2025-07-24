@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const { worldDB } = require("./db");
-const { genererNarration, appliquerEffets } = require("./utils");
+const { genererNarration, appliquerEffets } = require("./utils/utils");
 
 async function paroleDuMaitre(client) {
   console.log("⏱️ Tick de narration déclenché !");

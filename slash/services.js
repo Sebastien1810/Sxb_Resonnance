@@ -4,7 +4,7 @@ const {
   StringSelectMenuBuilder,
 } = require("discord.js");
 
-const { getAllServices } = require("../servicesManager");
+const { getAllServices } = require("../utils/servicesManager");
 
 module.exports = {
   data: new SlashCommandBuilder()
