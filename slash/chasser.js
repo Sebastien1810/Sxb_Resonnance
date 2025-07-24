@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const monstres = require("../data/monstres.json");
 const { lootMonstre } = require("../utils/lootManager");
-const { joueursDB } = require("../db");
+const { playersDB } = require("../db"); // ✅ CORRECT
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -23,15 +23,15 @@ module.exports = {
   async execute(interaction) {
     const zoneChoisie = interaction.options.getString("zone");
 
-    await joueursDB.read();
-    const joueurs = joueursDB.data;
+    await playersDB.read();
+    const joueurs = playersDB.data;
     const joueur = joueurs[interaction.user.id];
 
     if (!joueur) {
       return interaction.reply("Tu n'as pas encore de personnage !");
     }
 
-    // ➕ Si statsCombat pas encore définies, on les initialise
+    // ➕ Initialisation des stats si manquantes
     joueur.niveau = joueur.niveau || 1;
     joueur.xp = joueur.xp || 0;
     joueur.pv = joueur.pv || 20 + joueur.niveau * 2;
@@ -40,6 +40,7 @@ module.exports = {
       defense: 2 + Math.floor(joueur.niveau / 2),
     };
 
+    // 🎯 Sélection du monstre
     let monstresDisponibles = [];
     if (zoneChoisie === "zone_1") {
       monstresDisponibles = monstres.filter((m) => m.niveau === 1);
@@ -60,7 +61,7 @@ module.exports = {
         Math.floor(Math.random() * monstresDisponibles.length)
       ];
 
-    // ⚔️ Simulation du combat avec comparaison de stats
+    // ⚔️ Simulation du combat
     const degatsJoueur = Math.max(
       joueur.statsCombat.attaque - monstre.stats.defense,
       1
@@ -75,7 +76,6 @@ module.exports = {
     let message = `🧟 Tu rencontres **${monstre.nom}** (niv ${monstre.niveau}) !\n`;
 
     if (victoire) {
-      // ✅ Combat gagné
       joueur.pv -= degatsSubis;
       const xpGagnee = monstre.niveau * 5;
       joueur.xp += xpGagnee;
@@ -83,7 +83,6 @@ module.exports = {
       message += `💥 Tu as infligé ${degatsJoueur} dégâts et subi ${degatsSubis} !\n`;
       message += `✅ Tu remportes le combat ! +${xpGagnee} XP\n`;
 
-      // 🎁 Loot
       const loot = lootMonstre(monstre);
       if (loot) {
         message += `🎁 Tu trouves : **${loot.objet.nom}** *(rareté ${loot.rarete})*\n`;
@@ -91,7 +90,6 @@ module.exports = {
         message += `😢 Le monstre ne laisse rien derrière lui.\n`;
       }
 
-      // 🎉 Level up ?
       const xpPourMonter = joueur.niveau * 20;
       if (joueur.xp >= xpPourMonter) {
         joueur.niveau++;
@@ -104,7 +102,6 @@ module.exports = {
         message += `🧠 XP actuelle : ${joueur.xp}/${xpPourMonter}\n`;
       }
     } else {
-      // ❌ Défaite
       joueur.pv -= degatsSubis;
       if (joueur.pv <= 0) {
         joueur.niveau = Math.max(1, joueur.niveau - 1);
@@ -112,13 +109,13 @@ module.exports = {
         joueur.xp = 0;
         joueur.statsCombat.attaque = 3 + joueur.niveau;
         joueur.statsCombat.defense = 2 + Math.floor(joueur.niveau / 2);
-        message += `☠️ Tu as été vaincu par le monstre et perds 1 niveau. Tu es maintenant niveau ${joueur.niveau} avec ${joueur.pv} PV.\n`;
+        message += `☠️ Tu as été vaincu et perds 1 niveau. Tu es maintenant niveau ${joueur.niveau} avec ${joueur.pv} PV.\n`;
       } else {
-        message += `❌ Tu as perdu ce combat et subi ${degatsSubis} dégâts. Il te reste ${joueur.pv} PV.\n`;
+        message += `❌ Tu perds le combat et subis ${degatsSubis} dégâts. Il te reste ${joueur.pv} PV.\n`;
       }
     }
 
-    await joueursDB.write();
+    await playersDB.write();
     await interaction.reply(message);
   },
 };

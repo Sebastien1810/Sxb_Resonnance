@@ -65,6 +65,28 @@ function executerVolSpidicus(spidicus, monde) {
   return narrations[Math.floor(Math.random() * narrations.length)];
 }
 
+// ✅ Fonction : entretien du gang une fois par mois
+function entretenirGang(pnj) {
+  if (!pnj.gang || pnj.gang.length === 0) {
+    return { message: `${pnj.nom} n’a aucun sbire à entretenir.` };
+  }
+
+  const coutTotal = Math.floor(pnj.gang.length * 0.1 * 10); // 10% d’entretien
+  if (pnj.obsidienne < coutTotal) {
+    const sbiresPerdus = Math.floor(pnj.gang.length * 0.3); // 30% partent
+    pnj.gang.splice(0, sbiresPerdus);
+    return {
+      message: `${pnj.nom} n’a pas pu payer ses sbires. ${sbiresPerdus} ont quitté le gang !`,
+    };
+  }
+
+  pnj.obsidienne -= coutTotal;
+  return {
+    message: `${pnj.nom} a dépensé ${coutTotal} 💠 pour entretenir ses sbires.`,
+  };
+}
+
+// ✅ Boucle PNJ régulière
 function lancerTickPNJs(client) {
   cron.schedule("*/15 * * * *", () => {
     console.log("⏱️ tickPNJs lancé");
@@ -156,4 +178,11 @@ async function tickPNJs(client) {
   }
 }
 
-module.exports = { lancerTickPNJs };
+// ✅ Exports
+module.exports = {
+  lancerTickPNJs,
+  recruterSbire,
+  spidicusPeutVoler,
+  executerVolSpidicus,
+  entretenirGang,
+};
