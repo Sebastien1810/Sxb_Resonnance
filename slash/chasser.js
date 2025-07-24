@@ -1,7 +1,9 @@
 const { SlashCommandBuilder } = require("discord.js");
 const monstres = require("../data/monstres.json");
 const { lootMonstre } = require("../utils/lootManager");
-const { playersDB } = require("../db"); // ✅ CORRECT
+const { playersDB } = require("../db");
+
+const COOLDOWN_MINUTES = 6;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -22,14 +24,29 @@ module.exports = {
 
   async execute(interaction) {
     const zoneChoisie = interaction.options.getString("zone");
-
     await playersDB.read();
+
     const joueurs = playersDB.data;
     const joueur = joueurs[interaction.user.id];
 
-    if (!joueur) {
-      return interaction.reply("Tu n'as pas encore de personnage !");
+    if (!joueur) return interaction.reply("Tu n'as pas encore de personnage !");
+
+    // 🕒 Vérification du cooldown
+    const maintenant = new Date();
+    const derniereChasse = joueur.derniereChasse
+      ? new Date(joueur.derniereChasse)
+      : new Date(0);
+    const diffMinutes = (maintenant - derniereChasse) / 60000;
+
+    if (diffMinutes < COOLDOWN_MINUTES) {
+      const restantes = Math.ceil(COOLDOWN_MINUTES - diffMinutes);
+      return interaction.reply(
+        `⏳ Tu dois attendre encore ${restantes} minute(s) avant de chasser à nouveau.`
+      );
     }
+
+    // ⏱️ Mise à jour de la dernière chasse
+    joueur.derniereChasse = maintenant.toISOString();
 
     // ➕ Initialisation des stats si manquantes
     joueur.niveau = joueur.niveau || 1;
@@ -42,15 +59,14 @@ module.exports = {
 
     // 🎯 Sélection du monstre
     let monstresDisponibles = [];
-    if (zoneChoisie === "zone_1") {
+    if (zoneChoisie === "zone_1")
       monstresDisponibles = monstres.filter((m) => m.niveau === 1);
-    } else if (zoneChoisie === "zone_2") {
+    else if (zoneChoisie === "zone_2")
       monstresDisponibles = monstres.filter((m) => m.niveau === 2);
-    } else if (zoneChoisie === "zone_3") {
+    else if (zoneChoisie === "zone_3")
       monstresDisponibles = monstres.filter((m) => m.niveau === 3);
-    } else if (zoneChoisie === "zone_melange") {
+    else if (zoneChoisie === "zone_melange")
       monstresDisponibles = [...monstres];
-    }
 
     if (monstresDisponibles.length === 0) {
       return interaction.reply("Aucun monstre disponible dans cette zone.");
@@ -61,7 +77,7 @@ module.exports = {
         Math.floor(Math.random() * monstresDisponibles.length)
       ];
 
-    // ⚔️ Simulation du combat
+    // ⚔️ Combat
     const degatsJoueur = Math.max(
       joueur.statsCombat.attaque - monstre.stats.defense,
       1
@@ -71,8 +87,7 @@ module.exports = {
       1
     );
 
-    let victoire = degatsJoueur >= degatsSubis;
-
+    const victoire = degatsJoueur >= degatsSubis;
     let message = `🧟 Tu rencontres **${monstre.nom}** (niv ${monstre.niveau}) !\n`;
 
     if (victoire) {
