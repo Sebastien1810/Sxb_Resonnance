@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const monstres = require("../data/monstres.json");
 const { lootMonstre } = require("../utils/lootManager");
+const { joueursDB } = require("../db");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -22,8 +23,24 @@ module.exports = {
   async execute(interaction) {
     const zoneChoisie = interaction.options.getString("zone");
 
-    let monstresDisponibles = [];
+    await joueursDB.read();
+    const joueurs = joueursDB.data;
+    const joueur = joueurs[interaction.user.id];
 
+    if (!joueur) {
+      return interaction.reply("Tu n'as pas encore de personnage !");
+    }
+
+    // ➕ Si statsCombat pas encore définies, on les initialise
+    joueur.niveau = joueur.niveau || 1;
+    joueur.xp = joueur.xp || 0;
+    joueur.pv = joueur.pv || 20 + joueur.niveau * 2;
+    joueur.statsCombat = joueur.statsCombat || {
+      attaque: 3 + joueur.niveau,
+      defense: 2 + Math.floor(joueur.niveau / 2),
+    };
+
+    let monstresDisponibles = [];
     if (zoneChoisie === "zone_1") {
       monstresDisponibles = monstres.filter((m) => m.niveau === 1);
     } else if (zoneChoisie === "zone_2") {
@@ -31,7 +48,7 @@ module.exports = {
     } else if (zoneChoisie === "zone_3") {
       monstresDisponibles = monstres.filter((m) => m.niveau === 3);
     } else if (zoneChoisie === "zone_melange") {
-      monstresDisponibles = [...monstres]; // tous les monstres
+      monstresDisponibles = [...monstres];
     }
 
     if (monstresDisponibles.length === 0) {
@@ -43,13 +60,65 @@ module.exports = {
         Math.floor(Math.random() * monstresDisponibles.length)
       ];
 
-    const loot = lootMonstre(monstre);
-
-    await interaction.reply(
-      `🧟 Tu as affronté **${monstre.nom}** !\n` +
-        (loot
-          ? `🎁 Tu as obtenu : **${loot.objet.nom}** *(rareté ${loot.rarete})*`
-          : `😢 Malheureusement, tu n'as rien trouvé.`)
+    // ⚔️ Simulation du combat avec comparaison de stats
+    const degatsJoueur = Math.max(
+      joueur.statsCombat.attaque - monstre.stats.defense,
+      1
     );
+    const degatsSubis = Math.max(
+      monstre.stats.attaque - joueur.statsCombat.defense,
+      1
+    );
+
+    let victoire = degatsJoueur >= degatsSubis;
+
+    let message = `🧟 Tu rencontres **${monstre.nom}** (niv ${monstre.niveau}) !\n`;
+
+    if (victoire) {
+      // ✅ Combat gagné
+      joueur.pv -= degatsSubis;
+      const xpGagnee = monstre.niveau * 5;
+      joueur.xp += xpGagnee;
+
+      message += `💥 Tu as infligé ${degatsJoueur} dégâts et subi ${degatsSubis} !\n`;
+      message += `✅ Tu remportes le combat ! +${xpGagnee} XP\n`;
+
+      // 🎁 Loot
+      const loot = lootMonstre(monstre);
+      if (loot) {
+        message += `🎁 Tu trouves : **${loot.objet.nom}** *(rareté ${loot.rarete})*\n`;
+      } else {
+        message += `😢 Le monstre ne laisse rien derrière lui.\n`;
+      }
+
+      // 🎉 Level up ?
+      const xpPourMonter = joueur.niveau * 20;
+      if (joueur.xp >= xpPourMonter) {
+        joueur.niveau++;
+        joueur.xp = 0;
+        joueur.pv = 20 + joueur.niveau * 2;
+        joueur.statsCombat.attaque = 3 + joueur.niveau;
+        joueur.statsCombat.defense = 2 + Math.floor(joueur.niveau / 2);
+        message += `🎉 Tu passes niveau ${joueur.niveau} ! Tes PV sont restaurés (${joueur.pv})\n`;
+      } else {
+        message += `🧠 XP actuelle : ${joueur.xp}/${xpPourMonter}\n`;
+      }
+    } else {
+      // ❌ Défaite
+      joueur.pv -= degatsSubis;
+      if (joueur.pv <= 0) {
+        joueur.niveau = Math.max(1, joueur.niveau - 1);
+        joueur.pv = 10 + joueur.niveau * 2;
+        joueur.xp = 0;
+        joueur.statsCombat.attaque = 3 + joueur.niveau;
+        joueur.statsCombat.defense = 2 + Math.floor(joueur.niveau / 2);
+        message += `☠️ Tu as été vaincu par le monstre et perds 1 niveau. Tu es maintenant niveau ${joueur.niveau} avec ${joueur.pv} PV.\n`;
+      } else {
+        message += `❌ Tu as perdu ce combat et subi ${degatsSubis} dégâts. Il te reste ${joueur.pv} PV.\n`;
+      }
+    }
+
+    await joueursDB.write();
+    await interaction.reply(message);
   },
 };
