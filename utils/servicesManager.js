@@ -2,11 +2,12 @@ const path = require("path");
 const { Low } = require("lowdb");
 const { JSONFile } = require("lowdb/node");
 
-const playersFile = path.join(__dirname, "data/players.json");
+const playersFile = path.join(__dirname, "../data/players.json");
 const playersAdapter = new JSONFile(playersFile);
 const playersDB = new Low(playersAdapter, {});
 
-const servicesFile = path.join(__dirname, "data/services.json");
+const servicesFile = path.join(__dirname, "../data/services.json");
+
 const servicesAdapter = new JSONFile(servicesFile);
 const servicesDB = new Low(servicesAdapter, {});
 

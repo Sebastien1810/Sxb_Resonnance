@@ -3,6 +3,33 @@ const monstres = require("../data/monstres.json");
 const { lootMonstre } = require("../utils/lootManager");
 const { playersDB } = require("../db");
 
+// Helpers intégrés
+const clamp = (n, min = 0, max = 999) => Math.max(min, Math.min(max, n));
+function computeEquipBonus(equipe = {}) {
+  const bonus = { attaque: 0, defense: 0 };
+  for (const slot of ["arme", "armure"]) {
+    const it = equipe?.[slot];
+    if (it?.effets) {
+      if (typeof it.effets.attaque === "number")
+        bonus.attaque += it.effets.attaque;
+      if (typeof it.effets.defense === "number")
+        bonus.defense += it.effets.defense;
+    }
+  }
+  return bonus;
+}
+function recalcTotalStats(joueur) {
+  joueur.statsCombatBase ||= { attaque: 0, defense: 0 };
+  joueur.inventaire ||= { objets: [], équipé: { arme: null, armure: null } };
+  joueur.inventaire.équipé ||= { arme: null, armure: null };
+  const base = joueur.statsCombatBase;
+  const bonus = computeEquipBonus(joueur.inventaire.équipé);
+  joueur.statsCombat = {
+    attaque: clamp((base.attaque || 0) + (bonus.attaque || 0)),
+    defense: clamp((base.defense || 0) + (bonus.defense || 0)),
+  };
+}
+
 const COOLDOWN_MINUTES = 6;
 
 module.exports = {
@@ -31,7 +58,7 @@ module.exports = {
 
     if (!joueur) return interaction.reply("Tu n'as pas encore de personnage !");
 
-    // 🕒 Vérification du cooldown
+    // Cooldown
     const maintenant = new Date();
     const derniereChasse = joueur.derniereChasse
       ? new Date(joueur.derniereChasse)
@@ -44,20 +71,39 @@ module.exports = {
         `⏳ Tu dois attendre encore ${restantes} minute(s) avant de chasser à nouveau.`
       );
     }
-
-    // ⏱️ Mise à jour de la dernière chasse
     joueur.derniereChasse = maintenant.toISOString();
 
-    // ➕ Initialisation des stats si manquantes
+    // Init/migration
     joueur.niveau = joueur.niveau || 1;
     joueur.xp = joueur.xp || 0;
-    joueur.pv = joueur.pv || 20 + joueur.niveau * 2;
-    joueur.statsCombat = joueur.statsCombat || {
+
+    joueur.inventaire ||= { objets: [], équipé: { arme: null, armure: null } };
+    joueur.inventaire.équipé ||= { arme: null, armure: null };
+
+    // si ancien schéma: déduire base = total - bonus d’équipement courant
+    joueur.statsCombat ||= {
       attaque: 3 + joueur.niveau,
       defense: 2 + Math.floor(joueur.niveau / 2),
     };
+    const equipBonusInit = computeEquipBonus(joueur.inventaire.équipé);
+    joueur.statsCombatBase ||= {
+      attaque: Math.max(
+        0,
+        (joueur.statsCombat.attaque || 0) - (equipBonusInit.attaque || 0)
+      ),
+      defense: Math.max(
+        0,
+        (joueur.statsCombat.defense || 0) - (equipBonusInit.defense || 0)
+      ),
+    };
 
-    // 🎯 Sélection du monstre
+    joueur.pvMax = 20 + joueur.niveau * 2;
+    joueur.pv = joueur.pv ?? joueur.pvMax;
+
+    // Recalc total avant combat
+    recalcTotalStats(joueur);
+
+    // Monstres selon zone
     let monstresDisponibles = [];
     if (zoneChoisie === "zone_1")
       monstresDisponibles = monstres.filter((m) => m.niveau === 1);
@@ -72,12 +118,13 @@ module.exports = {
       return interaction.reply("Aucun monstre disponible dans cette zone.");
     }
 
+    // Tirage
     const monstre =
       monstresDisponibles[
         Math.floor(Math.random() * monstresDisponibles.length)
       ];
 
-    // ⚔️ Combat
+    // Combat
     const degatsJoueur = Math.max(
       joueur.statsCombat.attaque - monstre.stats.defense,
       1
@@ -109,9 +156,15 @@ module.exports = {
       if (joueur.xp >= xpPourMonter) {
         joueur.niveau++;
         joueur.xp = 0;
-        joueur.pv = 20 + joueur.niveau * 2;
-        joueur.statsCombat.attaque = 3 + joueur.niveau;
-        joueur.statsCombat.defense = 2 + Math.floor(joueur.niveau / 2);
+        joueur.pvMax = 20 + joueur.niveau * 2;
+        joueur.pv = joueur.pvMax;
+
+        // MAJ de la BASE selon la règle de progression
+        joueur.statsCombatBase.attaque = 3 + joueur.niveau;
+        joueur.statsCombatBase.defense = 2 + Math.floor(joueur.niveau / 2);
+
+        recalcTotalStats(joueur);
+
         message += `🎉 Tu passes niveau ${joueur.niveau} ! Tes PV sont restaurés (${joueur.pv})\n`;
       } else {
         message += `🧠 XP actuelle : ${joueur.xp}/${xpPourMonter}\n`;
@@ -120,10 +173,16 @@ module.exports = {
       joueur.pv -= degatsSubis;
       if (joueur.pv <= 0) {
         joueur.niveau = Math.max(1, joueur.niveau - 1);
-        joueur.pv = 10 + joueur.niveau * 2;
         joueur.xp = 0;
-        joueur.statsCombat.attaque = 3 + joueur.niveau;
-        joueur.statsCombat.defense = 2 + Math.floor(joueur.niveau / 2);
+        joueur.pvMax = 20 + joueur.niveau * 2;
+        joueur.pv = 10 + joueur.niveau * 2;
+
+        // Base selon niveau actuel
+        joueur.statsCombatBase.attaque = 3 + joueur.niveau;
+        joueur.statsCombatBase.defense = 2 + Math.floor(joueur.niveau / 2);
+
+        recalcTotalStats(joueur);
+
         message += `☠️ Tu as été vaincu et perds 1 niveau. Tu es maintenant niveau ${joueur.niveau} avec ${joueur.pv} PV.\n`;
       } else {
         message += `❌ Tu perds le combat et subis ${degatsSubis} dégâts. Il te reste ${joueur.pv} PV.\n`;

@@ -143,7 +143,7 @@ async function tickPNJs(client) {
           100,
           (monde.stats.tensionSociale || 0) + 0.2
         );
-        pnj.reputation = (pnj.reputation || 0) + 1;
+        pnj.reputation = (pnj.reputation || 0) - 3;
       }
 
       if (pnj.role.includes("policier")) {
